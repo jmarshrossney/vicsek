@@ -22,17 +22,20 @@ def evolve_ensemble(
         ax.set_xlabel("steps")
         ax.set_ylabel("order parameter")
 
-        pbar = tqdm(total=ensemble_size, desc="Simulations completed")
+        pbar = tqdm(total=(steps * ensemble_size), desc="Completed 0 simulations")
 
-        for replica in ensemble:
+        for i, replica in enumerate(ensemble):
+            
+            replica.evolve(
+                steps, track_order_parameter=True, interval=interval, pbar=pbar
+            )
 
-            replica.evolve(steps, track_order_parameter=True, interval=interval)
+            pbar.set_description(f"Completed {i} simulations")
+            pbar.refresh()
 
             # NOTE: dict not ordered so should strictly sort, but so far never needed
             # pairs = sorted(replica.trajectory.items())
             ax.plot(replica.trajectory.keys(), replica.trajectory.values())
-
-            pbar.update()
 
         pbar.close()
 

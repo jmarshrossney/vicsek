@@ -1,0 +1,5 @@
+font.size: 14
+legend.fontsize: 13
+lines.linestyle: -
+animation.html: jshtml
+animation.writer: imagemagick

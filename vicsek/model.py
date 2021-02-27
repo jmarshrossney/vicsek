@@ -5,6 +5,14 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 from functools import wraps
 from pathlib import Path
+from tqdm.autonotebook import tqdm
+
+plt.style.use(Path(__file__).resolve().parent / "vicsek.mplstyle")
+
+# Hard-coded interval for updating text overlay on animation and progress bar
+# This does not apply to particles which are updated every step
+ANI_UPDATE_INTERVAL = 10
+
 
 def expand_to_array(setter):
     """Decorator for property setters in the VicsekModel class, which takes inputs that
@@ -68,7 +76,7 @@ class VicsekModel:
         density,
         speed,
         noise,
-        radius=1,
+        radius=3,
         weights=1,
     ):
 
@@ -298,7 +306,7 @@ class VicsekModel:
 
         self._reset_flag = True
 
-    def evolve(self, steps: int, track_order_parameter=False, interval=10):
+    def evolve(self, steps: int, track_order_parameter=False, interval=10, pbar=None):
         """Evolves the system forwards.
 
         Inputs
@@ -320,15 +328,49 @@ class VicsekModel:
                 self._step()
                 if self.current_step % interval == 0:
                     self._trajectory[self.current_step] = self.order_parameter
+                if pbar is not None:
+                    pbar.update()
 
         else:
             for _ in range(steps):
                 self._step()
+            if pbar is not None:
+                pbar.update()
 
     def evolve_ensemble(self, ensemble_size: int, steps: int):
-        # NOTE: probably better implemented as an interactive script, allowing
-        # user to continue evolution if they underestimated num steps
-        raise NotImplementedError
+        """Evolve a number of identical models with different initial conditions.
+
+        Inputs:
+        -------
+        ensemble_size: int
+            Number of replica
+        steps: int
+            Number of steps to evolve for, aka trajectory length
+
+        Returns:
+        --------
+        mean: float
+            Mean value of the order parameter at the end of the trajectory
+        var: float
+            Sample variance of the order parameter at the end of the trajectory
+
+        Notes:
+        ------
+        A more flexible version of this, which allow the trajectories to be
+        visualised and the simulations to be resumed (as opposed to restarted)
+        if `steps` is understimated, is provided in vicsek.scripts.evolve_ensemble.
+        """
+        pbar = tqdm(total=(ensemble_size * steps), desc="Completed 0 simulations")
+        order_parameters = np.empty(ensemble_size)
+        for i in range(ensemble_size):
+            self.init_state(reproducible=False)
+            self.evolve(steps, track_order_parameter=False, pbar=pbar)
+            pbar.set_description(f"Completed {i} simulations")
+            pbar.refresh()
+            order_parameters[i] = self.order_parameter
+        pbar.close()
+
+        return order_parameters.mean(), order_parameters.var(ddof=1)
 
     # --------------------------------------------------------------------------------
     #                                                                | Visualisation |
@@ -437,19 +479,23 @@ class VicsekModel:
             )
             omega = 2 * np.pi * anneal_periods / steps
 
+        pbar = tqdm(total=steps, desc="Steps completed")
+
         def basic_loop(t):
             self._step()
             agents.set_offsets(self.positions)
-            if t % 10 == 0:  # hard coded interval for updating op
+            if t % ANI_UPDATE_INTERVAL == 0:
                 op_label.set_text(f"V = {self.order_parameter:1.2f}")
+                pbar.update(ANI_UPDATE_INTERVAL)
             return (agents, op_label)
 
         def annealing_loop(t):
             (agents, op_label) = basic_loop(t)
-            if t % 10 == 0:  # hard coded interval for updating noise
+            if t % ANI_UPDATE_INTERVAL == 0:
                 current_noise = np.pi * (1 + np.cos(omega * t))
                 self._noise = np.full(self.agents, fill_value=current_noise)
                 noise_label.set_text(f"$\eta$ = {current_noise:1.1f}")
+                pbar.update(ANI_UPDATE_INTERVAL)
             return agents, op_label, noise_label
 
         if anneal:
