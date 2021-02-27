@@ -14,8 +14,8 @@ def load_model():
         length=ARGS.length,
         density=ARGS.density,
         speed=ARGS.speed,
-        radius=ARGS.radius,
         noise=ARGS.noise,
+        radius=ARGS.radius,
         weights=ARGS.weights,
     )
     model.init_state(reproducible=ARGS.reproducible)
@@ -33,8 +33,6 @@ def anim():
         outpath=ARGS.outpath,
         anneal=ARGS.anneal,
         anneal_periods=ARGS.anneal_periods,
-        anneal_interval=ARGS.anneal_interval,
-        cmap=ARGS.cmap,
     )
 
 
@@ -61,9 +59,7 @@ def evol():
         MODEL,
         ensemble_size=ARGS.ensemble_size,
         steps=ARGS.steps,
-        interval=ARGS.op_interval,
+        interval=ARGS.interval,
         outpath=ARGS.outpath,
         interactive=ARGS.interactive,
     )
-
-    pass

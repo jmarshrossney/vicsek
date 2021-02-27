@@ -1,0 +1,8 @@
+length: 100
+density: 0.1
+speed: 0.5
+noise: 3
+
+steps: 500
+anneal: true
+anneal-periods: 0.5

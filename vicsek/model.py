@@ -6,8 +6,12 @@ from matplotlib.patches import Rectangle
 from functools import wraps
 from pathlib import Path
 
-
 def expand_to_array(setter):
+    """Decorator for property setters in the VicsekModel class, which takes inputs that
+    are numbers or iterables, and expands them into numpy arrays with a length equal to
+    the number of agents, by repeating the number or the [-1] element of the iterable.
+    """
+
     @wraps(setter)
     def wrapper(instance, new):
         if not hasattr(new, "__iter__"):
@@ -25,68 +29,61 @@ def expand_to_array(setter):
 
 
 class VicsekModel:
+    """
+    Class which implements the two-dimensional Vicsek model.
+
+    Inputs:
+    -------
+    length: int
+        Side length of square box.
+    density: float
+        Number of agents per square unit of the box.
+    speed: float or iterable
+        Magnitude of the velocity of the agents.
+    noise: float or iterable
+        Perturbations are drawn from a uniform distribution with limits +/- 0.5*noise.
+    radius: float or iterable (optional)
+        Interaction radius of agents.
+    weights: float or iterable (optional)
+        Relative weights of the agents in the interaction. By default they all
+        contribute to the interaction with the same weight.
+
+    Notes:
+    ------
+    The speed, noise, radius and weights can be provided as either a single number or
+    an interable of length less than or equal to the number of agents (density
+    multiplied by length squared). Inputs will be expanded to an array of the correct
+    length by repeating the [-1] element from the input, viewed as an iterable.
+
+    For example:
+
+        >>> VicsekModel(..., radius=[4, 3, 2, 1], ...)
+
+    will be expanded to `numpy.array([4, 3, 2, 1, 1, ..., 1])`
+    """
+
     def __init__(
         self,
-        length: int,
-        density: float,
-        speed: float,
-        radius: float,
-        noise: float,
-        weights: float = 1,
+        length,
+        density,
+        speed,
+        noise,
+        radius=1,
+        weights=1,
     ):
 
         self.length = length
         self.density = density
         self.speed = speed
-        self.radius = radius
         self.noise = noise
+        self.radius = radius
         self.weights = weights
 
         self.init_state(reproducible=False)
 
-    @property
-    def agents(self):
-        """Number of agents (particles) in the simulation."""
-        return self._agents
-
-    @property
-    def positions(self):
-        """Array of shape (agents, 2) containing the x and y coordinates of the
-        agents."""
-        return self._positions
-
-    @property
-    def headings(self):
-        """Array containing the headings (polar angle) of the agents."""
-        return self._headings
-
-    @property
-    def velocities(self):
-        """Array of shape (agents, 2) containing the x and y components of the
-        velocities of the agents."""
-        return np.expand_dims(self.speed, 1) * np.stack(
-            (np.cos(self.headings), np.sin(self.headings)), axis=1
-        )
-
-    @property
-    def order_parameter(self):
-        """Magnitude of the combined velocity of all agents, normalised to [0, 1]."""
-        return (
-            np.sqrt(np.square(self.velocities.mean(axis=0)).sum()) / self.speed.mean()
-        )
-
-    @property
-    def current_step(self):
-        """Number of steps taken since the model was initialised."""
-        return self._current_step
-
-    @property
-    def trajectory(self):
-        """A dictionary describing the trajectory of the order parameter (values) in
-        terms of the number of steps since initialisation (keys)."""
-        return self._trajectory
-
-    # -----------------------
+    # --------------------------------------------------------------------------------
+    #                                                             | Data descriptors |
+    #                                                             --------------------
 
     @property
     def length(self):
@@ -118,9 +115,6 @@ class VicsekModel:
         if new_value < 0 or new_value > 1:
             raise ValueError("Please provide a density between 0 and 1.")
         self._density = new_value
-        self._agents = int(
-            self._density * self.length ** 2
-        )  # NOTE: must set length first!
         if hasattr(self, "_reset_flag"):
             print("Resetting model to random initial configuration")
             self.init_state()
@@ -179,7 +173,55 @@ class VicsekModel:
             raise ValueError("The weights must be positive.")
         self._weights = new
 
-    # ------------------------
+    # --------------------------------------------------------------------------------
+    #                                                         | Read-only properties |
+    #                                                         ------------------------
+
+    @property
+    def positions(self):
+        """Array of shape (agents, 2) containing the x and y coordinates of the
+        agents."""
+        return self._positions
+
+    @property
+    def headings(self):
+        """Array containing the headings (polar angle) of the agents."""
+        return self._headings
+
+    @property
+    def velocities(self):
+        """Array of shape (agents, 2) containing the x and y components of the
+        velocities of the agents."""
+        return np.expand_dims(self.speed, 1) * np.stack(
+            (np.cos(self.headings), np.sin(self.headings)), axis=1
+        )
+
+    @property
+    def agents(self):
+        """Number of agents (particles) in the simulation."""
+        return int(self._density * self.length ** 2)
+
+    @property
+    def order_parameter(self):
+        """Magnitude of the combined velocity of all agents, normalised to [0, 1]."""
+        return (
+            np.sqrt(np.square(self.velocities.mean(axis=0)).sum()) / self.speed.mean()
+        )
+
+    @property
+    def current_step(self):
+        """Number of steps taken since the model was initialised."""
+        return self._current_step
+
+    @property
+    def trajectory(self):
+        """A dictionary describing the trajectory of the order parameter (values) in
+        terms of the number of steps since initialisation (keys)."""
+        return self._trajectory
+
+    # --------------------------------------------------------------------------------
+    #                                                            | Protected methods |
+    #                                                            ---------------------
 
     def _seed_rng(self, seed=None):
         """Resets the random number generator with a seed, for reproducibility. If no
@@ -218,7 +260,9 @@ class VicsekModel:
         # Update step counter
         self._current_step += 1
 
-    # -------------------------
+    # --------------------------------------------------------------------------------
+    #                                                               | Public methods |
+    #                                                               ------------------
 
     def copy(self):
         """Returns a new object with the same values of the parameters."""
@@ -226,8 +270,8 @@ class VicsekModel:
             length=self.length,
             density=self.density,
             speed=self.speed,
-            radius=self.radius,
             noise=self.noise,
+            radius=self.radius,
             weights=self.weights,
         )
 
@@ -284,13 +328,13 @@ class VicsekModel:
     def evolve_ensemble(self, ensemble_size: int, steps: int):
         # NOTE: probably better implemented as an interactive script, allowing
         # user to continue evolution if they underestimated num steps
-
-        # ensemble = [self.copy() for _ in range(ensemble_size)]
         raise NotImplementedError
 
-    # -----------------------
+    # --------------------------------------------------------------------------------
+    #                                                                | Visualisation |
+    #                                                                -----------------
 
-    def _get_box(self):
+    def get_box(self):
         """Returns a figure and axis with a box patch, reading for adding agents to
         the plot."""
         fig, ax = plt.subplots()
@@ -309,15 +353,9 @@ class VicsekModel:
 
         return fig, ax
 
-    def _pixel_density(self, fig, ax):
-        """Returns number of pixels per unit length along the box axes."""
-        bbox = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
-        length_in_pixels = bbox.width * fig.dpi
-        return length_in_pixels / self.length
-
     def plot_state(self, outpath=None):
         """Plot the current state of the system using quivers."""
-        fig, ax = self._get_box()
+        fig, ax = self.get_box()
 
         ax.quiver(
             self.positions[:, 0],
@@ -342,17 +380,33 @@ class VicsekModel:
         outpath=None,
         anneal=False,
         anneal_periods=1,
-        anneal_interval=10,
-        cmap="viridis_r",
     ):
-        """Animation of the agent positions."""
+        """Animation of the agent positions.
 
-        fig, ax = self._get_box()
+        Inputs:
+        -------
+        steps: int
+            Number of steps to evolve for.
+        outpath: str (optional)
+            Path to directory where animation will be saved.
+        anneal: bool (optional)
+            If True, the noise magnitude throughout the simulation will vary from a
+            maximum of 2\pi and a minimum of 0.
+        anneal_periods: int (optional)
+            Number of full oscillation periods of the noise. For traditional annealing
+            set equal to 0.5.
+        """
+
+        fig, ax = self.get_box()
 
         # Set disc radii equal to half their interaction radii
         # NOTE: if all radii are the same this looks good, but misleading if they
-        # vary. Setting equal to radis looks too big though, in my opinion
-        pixel_density = self._pixel_density(fig, ax)
+        # vary. Without factor of half it looks too big though, in my opinion
+        pixel_density = (
+            ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted()).width
+            * fig.dpi
+            / self.length
+        )
         disc_sizes = (0.5 * pixel_density * self.radius) ** 2
 
         agents = ax.scatter(
@@ -360,7 +414,7 @@ class VicsekModel:
             self.positions[:, 1],
             s=disc_sizes,
             c=self.weights,
-            cmap=cmap,
+            cmap="viridis_r",
             edgecolors="k",
             linewidth=0.5,
             alpha=0.8,
@@ -375,7 +429,7 @@ class VicsekModel:
         )
         if anneal:
             noise_label = ax.annotate(
-                f"$\eta$ = {self.noise[-1]:1.1f}",
+                f"$\eta$ = {(2 * np.pi):1.1f}",
                 xy=(0.78, 0.9),
                 xycoords="axes fraction",
                 zorder=2,
@@ -386,12 +440,13 @@ class VicsekModel:
         def basic_loop(t):
             self._step()
             agents.set_offsets(self.positions)
-            op_label.set_text(f"V = {self.order_parameter:.2g}")
+            if t % 10 == 0:  # hard coded interval for updating op
+                op_label.set_text(f"V = {self.order_parameter:1.2f}")
             return (agents, op_label)
 
         def annealing_loop(t):
             (agents, op_label) = basic_loop(t)
-            if t % anneal_interval == 0:
+            if t % 10 == 0:  # hard coded interval for updating noise
                 current_noise = np.pi * (1 + np.cos(omega * t))
                 self._noise = np.full(self.agents, fill_value=current_noise)
                 noise_label.set_text(f"$\eta$ = {current_noise:1.1f}")

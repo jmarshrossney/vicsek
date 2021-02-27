@@ -1,0 +1,6 @@
+length: 100
+density: 0.01
+speed: 0.5
+noise: 0.2
+
+steps: 500
