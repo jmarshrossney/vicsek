@@ -7,7 +7,7 @@ from functools import wraps
 from pathlib import Path
 from tqdm.autonotebook import tqdm
 
-plt.style.use(Path(__file__).resolve().parent / "vicsek.mplstyle")
+#plt.style.use(Path(__file__).resolve().parent / "vicsek.mplstyle")
 
 # Hard-coded interval for updating text overlay on animation and progress bar
 # This does not apply to particles which are updated every step
@@ -495,7 +495,6 @@ class VicsekModel:
                 current_noise = np.pi * (1 + np.cos(omega * t))
                 self._noise = np.full(self.agents, fill_value=current_noise)
                 noise_label.set_text(f"$\eta$ = {current_noise:1.1f}")
-                pbar.update(ANI_UPDATE_INTERVAL)
             return agents, op_label, noise_label
 
         if anneal:
@@ -511,5 +510,6 @@ class VicsekModel:
             outpath = Path(outpath)
             outpath.mkdir(parents=True, exist_ok=True)
             ani.save(outpath / "animation.gif")
+        pbar.close()
 
         return ani

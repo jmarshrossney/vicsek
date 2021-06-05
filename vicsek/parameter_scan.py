@@ -50,4 +50,5 @@ class ParameterScan:
             return 0
 
     def scan(self):
-        pass
+        ## TODO
+        raise NotImplementedError
