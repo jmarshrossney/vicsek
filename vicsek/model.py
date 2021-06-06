@@ -212,7 +212,7 @@ class VicsekModel:
 
     @property
     def particles(self) -> int:
-        """Number of particles (particles) in the simulation."""
+        """Number of particles in the simulation."""
         return int(self._density * self.length ** 2)
 
     @property
