@@ -69,3 +69,31 @@ def test_input_too_long():
         model.radius = np.ones(101)
     with pytest.raises(ValueError):
         model.weights = np.ones(101)
+
+def _test_same_state(model1, model2):
+    np.testing.assert_array_equal(model1.positions, model2.positions)
+    np.testing.assert_array_equal(model1.headings, model2.headings)
+    np.testing.assert_array_equal(model1.velocities, model2.velocities)
+
+def test_reproducibility():
+    model1 = VicsekModel(
+        10,
+        1,
+        speed=1,
+        noise=1,
+        seed=12345,
+    )
+    model2 = VicsekModel(
+        10,
+        1,
+        speed=1,
+        noise=1,
+        seed=12345,
+    )
+    _test_same_state(model1, model2)
+
+    model1.evolve(steps=100)
+    model2.evolve(steps=100)
+    _test_same_state(model1, model2)
+
+
