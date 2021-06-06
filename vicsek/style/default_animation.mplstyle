@@ -1,0 +1,6 @@
+animation.html: jshtml
+animation.writer: imagemagick
+lines.linestyle: -
+lines.linewidth: 0.5
+lines.markersize: 5
+scatter.edgecolors: black
