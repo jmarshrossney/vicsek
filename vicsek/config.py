@@ -7,14 +7,14 @@ parser.add("-c", "--config", is_config_file=True, help="path to config file")
 # Arguments specifying model parameters
 parser.add("-l", "--length", type=int, required=True, help="side length of box")
 parser.add(
-    "-d", "--density", type=float, required=True, help="density of agents in box"
+    "-d", "--density", type=float, required=True, help="density of particles in box"
 )
 parser.add(
     "--speed",
     type=float,
     nargs="*",
     default=1,
-    help="speed of agents, default: 1",
+    help="speed of particles, default: 1",
 )
 parser.add(
     "--noise",
@@ -35,7 +35,7 @@ parser.add(
     type=float,
     nargs="*",
     default=1,
-    help="relative weights of agents in interaction, default: 1",
+    help="relative weights of particles in interaction, default: 1",
 )
 
 # Arguments specifying simulation parameters

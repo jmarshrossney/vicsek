@@ -45,7 +45,7 @@ def time():
     )
     print(
         f"""
-        Number of agents:       {MODEL.agents}
+        Number of particles:       {MODEL.particles}
         Simulation length:      {ARGS.steps} steps
         Number of simulations:  {ARGS.repeats}
         Time taken:             {t:.4g} seconds
