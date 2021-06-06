@@ -3,6 +3,7 @@ import configargparse
 parser = configargparse.ArgParser()
 
 parser.add("-c", "--config", is_config_file=True, help="path to config file")
+parser.add("-o", "--outpath", type=str, default=".", help="path to output files")
 
 # Arguments specifying model parameters
 parser.add("-l", "--length", type=int, required=True, help="side length of box")
@@ -12,23 +13,23 @@ parser.add(
 parser.add(
     "--speed",
     type=float,
+    required=True,
     nargs="*",
-    default=1,
-    help="speed of particles, default: 1",
+    help="speed of particles",
 )
 parser.add(
     "--noise",
     type=float,
+    required=True,
     nargs="*",
-    default=0,
-    help="magnitude of noise, default: 0",
+    help="magnitude of noise",
 )
 parser.add(
     "--radius",
     type=float,
     nargs="*",
-    default=2,
-    help="radius of interaction, default: 2",
+    default=1,
+    help="radius of interaction, default: 1",
 )
 parser.add(
     "--weights",
@@ -37,24 +38,14 @@ parser.add(
     default=1,
     help="relative weights of particles in interaction, default: 1",
 )
+parser.add(
+    "--seed", default=None, help="provide integer seed for reproducibility"
+)
 
 # Arguments specifying simulation parameters
-parser.add(
-    "--reproducible", action="store_true", help="use known seed for reproducibility"
-)
-parser.add("--steps", type=int, default=100, help="number of steps to take")
-parser.add("-o", "--outpath", type=str, default=".", help="path to output files")
-parser.add(
-    "--anneal", action="store_true", help="anneal the noise during the simulation"
-)
-parser.add(
-    "--anneal-periods", type=float, default=1.0, help="number of annealing cycles"
-)
-
-# Timing measurements
-parser.add(
-    "--repeats", type=int, default=10, help="number of repeats for timings measurements"
-)
+parser.add("--frames", type=int, default=100, help="number of frames in the animation")
+parser.add("--steps", type=int, default=1, help="number of steps per frame")
+parser.add("--interval", type=int, default=30, help="number of ms between frames")
 
 # Ensemble evolution
 parser.add(
@@ -63,15 +54,6 @@ parser.add(
     default=10,
     help="number of replica systems to simulate",
 )
-parser.add(
-    "--interval",
-    type=int,
-    default=10,
-    help="steps between order parameter calculations",
-)
-parser.add(
-    "-i",
-    "--interactive",
-    action="store_true",
-    help="run ensemble evolution interactively",
-)
+
+parser.add("--style", type=str, default=None, help="path to custom matplotlib style file")
+

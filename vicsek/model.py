@@ -64,6 +64,9 @@ class VicsekModel:
     weights : float or iterable, optional
         Relative weights of the particles in the interaction term. By default all
         particles carry the same weight.
+    seed : int or None, optional
+        Seed for random number generator. By providing a known integer one can
+        reproduce the evolution of the model. None by default.
 
     Notes
     -----
@@ -93,6 +96,7 @@ class VicsekModel:
         noise: ParticleProperty,
         radius: ParticleProperty = 1,
         weights: ParticleProperty = 1,
+        seed: Union[int, None] = None,
     ):
 
         self.length = length
@@ -102,7 +106,7 @@ class VicsekModel:
         self.radius = radius
         self.weights = weights
 
-        self.init_state(reproducible=False)
+        self.init_state(seed=seed)
 
     # --------------------------------------------------------------------------------
     #                                                             | Data descriptors |
@@ -227,16 +231,13 @@ class VicsekModel:
     def trajectory(self) -> dict:
         """A dictionary describing the trajectory of the order parameter (values) in
         terms of the number of steps since initialisation (keys)."""
+        # NOTE: I removed the flexibility to measure OP every X steps, so the dict
+        # constructions is not necessary.
         return self._trajectory
 
     # --------------------------------------------------------------------------------
     #                                                               | Public methods |
     #                                                               ------------------
-
-    def seed_rng(self, seed: Union[int, None] = None):
-        """Resets the random number generator with a seed, for reproducibility. If no
-        seed is provided the rng will be randomly re-initialised."""
-        self._rng = np.random.default_rng(seed)
 
     def step(self):
         """Performs a single step for all particles."""
@@ -270,20 +271,16 @@ class VicsekModel:
         # Update step counter
         self._current_step += 1
 
-    def init_state(self, reproducible: bool = False):
+    def init_state(self, seed: Union[int, None] = None):
         """Initialises the model by randomly generating positions and headings.
 
         Parameters
         ----------
-        reproducible : bool, optional
-            If True, the random number generator is initialised with a known seed
-            and the simulation can be reproduced exactly with this seed.
-            False by default.
+        seed : int or None
+            Seed for random number generator. By providing a known integer one can
+            reproduce the evolution of the model.
         """
-        if reproducible:
-            self.seed_rng(seed=123456)
-        else:
-            self.seed_rng(seed=None)
+        self._rng = np.random.default_rng(seed)
 
         self._positions = self._rng.random((self.particles, 2)) * self.length
         self._headings = self._rng.random(size=self.particles) * 2 * np.pi
@@ -297,7 +294,6 @@ class VicsekModel:
         self,
         steps: int,
         track_order_parameter: bool = False,
-        interval: int = 10,
         pbar=None,  # TODO I don't like passing the pbar as an arg.
     ):
         """Evolves the system forwards a number of steps.
@@ -309,15 +305,11 @@ class VicsekModel:
         track_order_parameter : bool, optional
             If True, update the trajectory of the order parameter during evolution.
             False by default.
-        interval : int, optional
-            Number of steps between each evaluation of the order parameter.
-            10 by default.
         """
         if track_order_parameter:
             for _ in range(steps):
                 self.step()
-                if self.current_step % interval == 0:
-                    self._trajectory[self.current_step] = self.order_parameter
+                self._trajectory[self.current_step] = self.order_parameter
                 if pbar is not None:
                     pbar.update()
 
@@ -355,13 +347,13 @@ class VicsekModel:
         ``vicsek.scripts.evolve_ensemble``
         """
         pbar = tqdm(total=(ensemble_size * steps), desc="Completed 0 simulations")
-        order_parameters = np.empty(ensemble_size)
+        order_parameters = []
         for i in range(ensemble_size):
             self.init_state(reproducible=False)
             self.evolve(steps, track_order_parameter=False, pbar=pbar)
             pbar.set_description(f"Completed {i} simulations")
             pbar.refresh()
-            order_parameters[i] = self.order_parameter
+            order_parameters.append(self.order_parameter)
         pbar.close()
 
-        return order_parameters.mean(), order_parameters.var(ddof=1)
+        return np.mean(order_parameters), np.var(order_parameters, ddof=1)

@@ -3,6 +3,4 @@ animation.writer: imagemagick
 lines.linestyle: -
 lines.linewidth: 0.5
 lines.markersize: 5
-lines.markerfacecolor: blue
-lines.markeredgecolor: black
 scatter.edgecolors: black

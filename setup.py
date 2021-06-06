@@ -5,7 +5,7 @@ with open("README.md") as f:
 
 setup(
     name="vicsek",
-    version=2.0,
+    version=3.0,
     description="Implementation of the Vicsek model of active matter",
     author="Joe Marsh Rossney",
     url="https://github.com/marshrossney/vicsek",
@@ -13,9 +13,9 @@ setup(
     package=find_packages(),
     entry_points={
         "console_scripts": [
-            "vic-anim = vicsek.scripts.shell_scripts:anim",
-            "vic-time = vicsek.scripts.shell_scripts:time",
-            "vic-evol = vicsek.scripts.shell_scripts:evol",
+            "vic-ani = vicsek.scripts.vic_ani:main",
+            "vic-snap = vicsek.scripts.vic_snap:main",
+            "vic-ens = vicsek.scripts.vic_ens:main",
         ]
     },
 )

@@ -1,7 +1,8 @@
-import numpy as np
-import matplotlib.pyplot as plt
-from tqdm.autonotebook import tqdm
 from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+from tqdm.autonotebook import tqdm
 
 
 def save_fig(fig, outpath):
@@ -10,53 +11,24 @@ def save_fig(fig, outpath):
     fig.savefig(outpath / "ensemble.png")
 
 
-def evolve_ensemble(
-    model, ensemble_size, steps, interval=10, outpath=None, interactive=False
-):
+def evolve_ensemble(ensemble: list, steps: int, outpath: Path, snapshot_interval: int):
 
-    ensemble = [model.copy() for _ in range(ensemble_size)]
+    fig, ax = plt.subplots()
+    ax.set_xlabel("steps")
+    ax.set_ylabel("order parameter")
 
-    finished = False
-    while not finished:
-        fig, ax = plt.subplots()
-        ax.set_xlabel("steps")
-        ax.set_ylabel("order parameter")
+    pbar = tqdm(total=(steps * ensemble_size), desc="Completed 0 simulations")
 
-        pbar = tqdm(total=(steps * ensemble_size), desc="Completed 0 simulations")
+    for i, replica in enumerate(ensemble):
 
-        for i, replica in enumerate(ensemble):
-            
-            replica.evolve(
-                steps, track_order_parameter=True, interval=interval, pbar=pbar
-            )
+        replica.evolve(steps, track_order_parameter=True, pbar=pbar)
 
-            pbar.set_description(f"Completed {i} simulations")
-            pbar.refresh()
+        pbar.set_description(f"Completed {i} simulations")
+        pbar.refresh()
 
-            # NOTE: dict not ordered so should strictly sort, but so far never needed
-            # pairs = sorted(replica.trajectory.items())
-            ax.plot(replica.trajectory.keys(), replica.trajectory.values())
+        # NOTE: dict not ordered so should strictly sort, but so far never needed
+        # pairs = sorted(replica.trajectory.items())
+        ax.plot(replica.trajectory.keys(), replica.trajectory.values())
 
-        pbar.close()
+    pbar.close()
 
-        if not interactive:
-            if outpath is not None:
-                save_fig(fig, outpath)
-            break
-
-        plt.show()
-
-        instruct = input("Continue? (y/n) > ")
-        if "y" in instruct.lower():
-            steps = int(
-                input("How many more steps to evolve for? (enter an integer) > ")
-            )
-            interval = int(
-                input(
-                    "How many steps between order parameter measurements? (enter an integer) > "
-                )
-            )
-        else:
-            if outpath is not None:
-                save_fig(fig, outpath)
-            finished = True

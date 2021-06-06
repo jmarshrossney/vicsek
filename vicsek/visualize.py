@@ -6,9 +6,6 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.patches import Rectangle
 import numpy as np
 
-# TODO set default style but allow easy overriding
-plt.style.use("vicsek.mplstyle")
-
 
 def get_pixel_density(model) -> float:
     """Returns the number of pixels per unit *length* on a standard figure.
@@ -57,7 +54,7 @@ class ParticlesAnimation:
         self.sizes = sizes
         self.colors = colors
 
-    def animation_init(self):
+    def figure_init(self):
         """Initialises the figure with any non-animated components.
 
         In this case we simply remove the axes and add a square box patch.
@@ -94,27 +91,29 @@ class ParticlesAnimation:
         )
         return (particles,)
 
-    def loop(self, t: int, artists) -> tuple:
+    def loop(self, i: int, steps: int, artists) -> tuple:
         """The function to be iterated over by the animation.
 
-        Takes a frame number ``t`` and the PathCollection object returned by
+        Takes a frame number ``i`` and the PathCollection object returned by
         ``matplotlib.pyplot.scatter`` containing the current snapshot of the
-        particles. Applies ``self.model.step()`` and then updates the coordinates
-        of the particles.
+        particles. Applies ``self.model.step()`` a number ``steps`` times and
+        then updates the coordinates of the particles.
         """
-        self.model.step()
+        self.model.evolve(steps)
         (particles,) = artists
         particles.set_offsets(self.model.positions)
         return (particles,)
 
-    def animate(self, steps: int = 100, interval: int = 30) -> FuncAnimation:
+    def animate(self, frames: int = 100, steps: int = 1, interval: int = 30) -> FuncAnimation:
         """Returns the animation.
 
         Parameters
         ----------
+        frames: : int, optional
+            Number of frames in the animation. 100 by default.
         steps : int, optional
-            Number of times the model is stepped forward during the animation.
-            Also the number of frames in the animation. 100 by default.
+            Number of times the model is stepped forward *for each frame* of the
+            animation. The total number of steps is ``steps * frames``. 1 by default.
         interval : int, optional
             Time in ms between frames. 30ms by default.
 
@@ -129,14 +128,14 @@ class ParticlesAnimation:
 
         To save the animation, use ``ani.save('animation.gif')``.
         """
-        fig = self.animation_init()
+        fig = self.figure_init()
 
         artists = self.add_artists(fig)
 
-        def _loop(t):
-            return self.loop(t, artists)
+        def _loop(i):
+            return self.loop(i, steps, artists)
 
-        ani = FuncAnimation(fig, _loop, frames=steps, interval=interval, blit=True)
+        ani = FuncAnimation(fig, _loop, frames=frames, interval=interval, blit=True)
 
         return ani
 
@@ -154,7 +153,7 @@ class ParticlesAnimationWithAnnealing(ParticlesAnimation):
         The model whose particles will be animated by repeatedly calling its
         ``step()`` method.
     anneal_period : int, optional
-        Number of steps over which the noise will complete a full oscillation
+        Number of *frames* over which the noise will complete a full oscillation
         from a 2pi -> 0 -> 2pi. By default, 200.
         which is standard annealing behaviour (max noise -> min noise -> stop).
     sizes : float, iterable or None, optional
@@ -193,15 +192,70 @@ class ParticlesAnimationWithAnnealing(ParticlesAnimation):
         )
         return (particles, op_label, noise_label)
 
-    def loop(self, t, artists):
+    def loop(self, i, steps, artists):
         """Extends super().loop() to also vary the noise during the animation, and
         add annotations for the noise and the order parameter."""
         particles, op_label, noise_label = artists
-        super().loop(t, particles)
+        super().loop(i, steps, particles)
 
-        current_noise = np.pi * (1 + np.cos(2 * np.pi * t / self.anneal_period))
+        current_noise = np.pi * (1 + np.cos(2 * np.pi * i / self.anneal_period))
         self.model.noise = np.full(self.model.particles, fill_value=current_noise)
 
         op_label.set_text(f"OP = {self.model.order_parameter:1.2f}")
         noise_label.set_text(f"$\eta$ = {current_noise:1.1f}")
         return artists
+
+
+def snapshot(model, t: int = None) -> plt.figure:
+    """Returns a snapshot of the state of the system as a quiver plot.
+
+    Parameters
+    ----------
+    model : VicsekModel
+        The model containing particles with positions and velocities.
+    t : int or None, optional
+        Number of steps elapsed since initialisation. If int provided,
+        the plot will be annotated with this number.
+
+    Returns
+    -------
+    matplotlib.pyplot.figure
+    """
+
+    fig, ax = plt.subplots()
+
+    # Hide axes and make figure square (L, L)
+    ax.set_axis_off()
+    ax.set_aspect("equal")
+
+    # Add a box
+    box = Rectangle(
+        xy=(0, 0),
+        width=model.length,
+        height=model.length,
+        edgecolor="black",
+        facecolor="none",
+        linewidth=2,
+    )
+    ax.add_patch(box)
+
+    ax.quiver(
+        model.positions[:, 0],
+        model.positions[:, 1],
+        model.velocities[:, 0],
+        model.velocities[:, 1],
+    )
+    ax.annotate(
+        f"OP = {model.order_parameter:1.2f}",
+        xy=(0.9, -0.1),
+        xycoords="axes fraction",
+        fontsize=12,
+    )
+    if t is not None:
+        ax.annotate(
+            f"t = {t}",
+            xy=(0, -0.1),
+            xycoords="axes fraction",
+            fontsize=12,
+        )
+    return fig
