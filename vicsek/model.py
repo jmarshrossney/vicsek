@@ -1,12 +1,12 @@
 from collections.abc import Iterable
 from functools import wraps
 import logging
-from pathlib import Path
 from typing import Union
 
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
 import numpy as np
 from scipy.spatial.distance import pdist, squareform
-from tqdm.autonotebook import tqdm
 
 log = logging.getLogger(__name__)
 
@@ -82,7 +82,7 @@ class VicsekModel:
         array([1., 1., 1., ... 1., 3., 2., 4.])
         >>> model.noise.size
         36
-    
+
     The reason that the elements appear in reverse order is so that the 'interesting'
     particles appear on top if the model is animated.
 
@@ -239,6 +239,25 @@ class VicsekModel:
     #                                                               | Public methods |
     #                                                               ------------------
 
+    def init_state(self, seed: Union[int, None] = None):
+        """Initialises the model by randomly generating positions and headings.
+
+        Parameters
+        ----------
+        seed : int or None
+            Seed for random number generator. By providing a known integer one can
+            reproduce the evolution of the model.
+        """
+        self._rng = np.random.default_rng(seed)
+
+        self._positions = self._rng.random((self.particles, 2)) * self.length
+        self._headings = self._rng.random(size=self.particles) * 2 * np.pi
+
+        self._current_step = 0
+        self._trajectory = {0: self.order_parameter}
+
+        self._reset_flag = True
+
     def step(self):
         """Performs a single step for all particles."""
         # Generate adjacency matrix - true if separation less than radius
@@ -271,30 +290,10 @@ class VicsekModel:
         # Update step counter
         self._current_step += 1
 
-    def init_state(self, seed: Union[int, None] = None):
-        """Initialises the model by randomly generating positions and headings.
-
-        Parameters
-        ----------
-        seed : int or None
-            Seed for random number generator. By providing a known integer one can
-            reproduce the evolution of the model.
-        """
-        self._rng = np.random.default_rng(seed)
-
-        self._positions = self._rng.random((self.particles, 2)) * self.length
-        self._headings = self._rng.random(size=self.particles) * 2 * np.pi
-
-        self._current_step = 0
-        self._trajectory = {0: self.order_parameter}
-
-        self._reset_flag = True
-
     def evolve(
         self,
         steps: int,
         track_order_parameter: bool = False,
-        pbar=None,  # TODO I don't like passing the pbar as an arg.
     ):
         """Evolves the system forwards a number of steps.
 
@@ -306,54 +305,63 @@ class VicsekModel:
             If True, update the trajectory of the order parameter during evolution.
             False by default.
         """
-        if track_order_parameter:
-            for _ in range(steps):
-                self.step()
+        for _ in range(steps):
+            self.step()
+            if track_order_parameter:
                 self._trajectory[self.current_step] = self.order_parameter
-                if pbar is not None:
-                    pbar.update()
 
-        else:
-            for _ in range(steps):
-                self.step()
-            if pbar is not None:
-                pbar.update()
+    def get_box(self) -> Rectangle:
+        """Returns a Rectangle patch representing the box."""
+        return Rectangle(
+            xy=(0, 0),
+            width=self.length,
+            height=self.length,
+            edgecolor="black",
+            facecolor="none",
+            linewidth=2,
+        )
 
-    def evolve_ensemble(self, steps: int, ensemble_size: int):
-        """Evolve a number of identical models with different initial conditions.
+    def view(self, annotate=True) -> plt.figure:
+        """Visualise the current state of the system using quivers.
 
         Parameters
         ----------
-        steps : int
-            Number of steps to evolve for, aka trajectory length.
-        ensemble_size : int
-            Number of replica systems.
+        annotate : bool, optional
+            If True, annotate the plot with the current value of the order
+            parameter and the number of steps since the model was initialised.
+            True by default.
 
         Returns
         -------
-        float
-            Mean value of the order parameter at the end of the trajectory.
-        float
-            Sample variance of the order parameter at the end of the trajectory.
-
-        Notes
-        -----
-        A more flexible version of this, which allow the trajectories to be
-        visualised and the simulations to be resumed (as opposed to restarted)
-        if ``steps`` is understimated, is provided in ``vicsek.scripts.evolve_ensemble.``
-
-        See Also
-        --------
-        ``vicsek.scripts.evolve_ensemble``
+        matplotlib.pyplot.figure
         """
-        pbar = tqdm(total=(ensemble_size * steps), desc="Completed 0 simulations")
-        order_parameters = []
-        for i in range(ensemble_size):
-            self.init_state(reproducible=False)
-            self.evolve(steps, track_order_parameter=False, pbar=pbar)
-            pbar.set_description(f"Completed {i} simulations")
-            pbar.refresh()
-            order_parameters.append(self.order_parameter)
-        pbar.close()
+        fig, ax = plt.subplots()
 
-        return np.mean(order_parameters), np.var(order_parameters, ddof=1)
+        # Hide axes and make figure square (L, L)
+        ax.set_axis_off()
+        ax.set_aspect("equal")
+
+        # Add a box
+        box = self.get_box()
+        ax.add_patch(box)
+
+        ax.quiver(
+            self.positions[:, 0],
+            self.positions[:, 1],
+            self.velocities[:, 0],
+            self.velocities[:, 1],
+        )
+        if annotate:
+            ax.annotate(
+                f"OP = {self.order_parameter:1.2f}",
+                xy=(0.9, -0.1),
+                xycoords="axes fraction",
+                fontsize=12,
+            )
+            ax.annotate(
+                f"t = {self.current_step}",
+                xy=(0, -0.1),
+                xycoords="axes fraction",
+                fontsize=12,
+            )
+        return fig

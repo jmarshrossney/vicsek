@@ -1,9 +1,5 @@
-from collections.abc import Iterable
-from pathlib import Path
-
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-from matplotlib.patches import Rectangle
 import numpy as np
 
 
@@ -66,14 +62,7 @@ class ParticlesAnimation:
         ax.set_aspect("equal")
 
         # Add a box
-        box = Rectangle(
-            xy=(0, 0),
-            width=self.model.length,
-            height=self.model.length,
-            edgecolor="black",
-            facecolor="none",
-            linewidth=2,
-        )
+        box = self.model.get_box()
         ax.add_patch(box)
 
         return fig
@@ -104,7 +93,9 @@ class ParticlesAnimation:
         particles.set_offsets(self.model.positions)
         return (particles,)
 
-    def animate(self, frames: int = 100, steps: int = 1, interval: int = 30) -> FuncAnimation:
+    def animate(
+        self, frames: int = 100, steps: int = 1, interval: int = 30
+    ) -> FuncAnimation:
         """Returns the animation.
 
         Parameters
@@ -185,7 +176,7 @@ class ParticlesAnimationWithAnnealing(ParticlesAnimation):
             fontsize=12,
         )
         noise_label = fig.gca().annotate(
-            f"$\eta$ = {(2 * np.pi):1.1f}",
+            rf"$\eta$ = {(2 * np.pi):1.1f}",
             xy=(0.78, 0.9),
             xycoords="axes fraction",
             fontsize=12,
@@ -202,60 +193,5 @@ class ParticlesAnimationWithAnnealing(ParticlesAnimation):
         self.model.noise = np.full(self.model.particles, fill_value=current_noise)
 
         op_label.set_text(f"OP = {self.model.order_parameter:1.2f}")
-        noise_label.set_text(f"$\eta$ = {current_noise:1.1f}")
+        noise_label.set_text(rf"$\eta$ = {current_noise:1.1f}")
         return artists
-
-
-def snapshot(model, t: int = None) -> plt.figure:
-    """Returns a snapshot of the state of the system as a quiver plot.
-
-    Parameters
-    ----------
-    model : VicsekModel
-        The model containing particles with positions and velocities.
-    t : int or None, optional
-        Number of steps elapsed since initialisation. If int provided,
-        the plot will be annotated with this number.
-
-    Returns
-    -------
-    matplotlib.pyplot.figure
-    """
-
-    fig, ax = plt.subplots()
-
-    # Hide axes and make figure square (L, L)
-    ax.set_axis_off()
-    ax.set_aspect("equal")
-
-    # Add a box
-    box = Rectangle(
-        xy=(0, 0),
-        width=model.length,
-        height=model.length,
-        edgecolor="black",
-        facecolor="none",
-        linewidth=2,
-    )
-    ax.add_patch(box)
-
-    ax.quiver(
-        model.positions[:, 0],
-        model.positions[:, 1],
-        model.velocities[:, 0],
-        model.velocities[:, 1],
-    )
-    ax.annotate(
-        f"OP = {model.order_parameter:1.2f}",
-        xy=(0.9, -0.1),
-        xycoords="axes fraction",
-        fontsize=12,
-    )
-    if t is not None:
-        ax.annotate(
-            f"t = {t}",
-            xy=(0, -0.1),
-            xycoords="axes fraction",
-            fontsize=12,
-        )
-    return fig

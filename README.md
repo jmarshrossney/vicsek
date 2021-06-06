@@ -1,8 +1,8 @@
 # Vicsek
 
-An implementation of the 2-dimensional Vicsek model<sup>1</sup> of interacting self-propelled particles, written in Python.
+An implementation of the two-dimensional Vicsek model<sup>1</sup> of interacting self-propelled particles.
 
-Originally written in Python 2 as part of an undergraduate group project. Recently updated to Python 3 and completely reformulated because people had actually been forking some embaressingly shit code for their projects and I felt very guilty.
+Originally written in Python 2 as part of an undergraduate group project back in 2017. Recently updated to Python 3 and completely reformulated because people had actually been forking some embarrassingly shit code for their projects and I felt very guilty.
 
 Intended to spark joy :)
 

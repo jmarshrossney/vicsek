@@ -38,9 +38,7 @@ parser.add(
     default=1,
     help="relative weights of particles in interaction, default: 1",
 )
-parser.add(
-    "--seed", default=None, help="provide integer seed for reproducibility"
-)
+parser.add("--seed", default=None, help="provide integer seed for reproducibility")
 
 # Arguments specifying simulation parameters
 parser.add("--frames", type=int, default=100, help="number of frames in the animation")
@@ -55,5 +53,6 @@ parser.add(
     help="number of replica systems to simulate",
 )
 
-parser.add("--style", type=str, default=None, help="path to custom matplotlib style file")
-
+parser.add(
+    "--style", type=str, default=None, help="path to custom matplotlib style file"
+)
