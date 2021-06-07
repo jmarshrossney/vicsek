@@ -38,7 +38,7 @@ parser.add(
     default=1,
     help="relative weights of particles in interaction, default: 1",
 )
-parser.add("--seed", default=None, help="provide integer seed for reproducibility")
+parser.add("--seed", type=int, default=None, help="provide integer seed for reproducibility")
 
 parser.add(
     "--style", type=str, default=None, help="path to custom matplotlib style file"
