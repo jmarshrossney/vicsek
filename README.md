@@ -8,36 +8,118 @@ Intended to spark joy :)
 
 ## Installation
 
+### Basic installation
+
 Clone the repo using one of the numerous available options, e.g.
-```bash
+
+```
 git clone https://github.com/marshrossney/vicsek.git
 cd vicsek
 ```
 
-The required packages are reasonably up-to-date versions of
-* NumPy, SciPy, Matplotlib
-* [ConfigArgParse](https://github.com/bw2/ConfigArgParse) if you want to run things via the command line
+Next, install the Conda environment provided in this repository
 
-You can install the Conda environment provided in this repository
-```bash
-conda create -f environment.yml
+```
+conda create -f environment.yml -n vicsek
 conda activate vicsek
 ```
-and then install the package into this environment (make sure you're in the base directory of the repo)
-```bash
+
+and then install the package into this environment
+
+```
 python -m pip install -e .
 ```
 
+This is technically all you need to be able to import modules into your scripts.
+
+To run the scripts in `vicsek/scripts/` from the command line, you will also need to install [ConfigArgParse](https://github.com/bw2/ConfigArgParse).
+
+```
+conda install -c conda-forge configargparse
+```
+
+### Development
+
+If you want to extend or modify the code I would suggest creating a 'development' environment,
+
+```
+conda create -n vicsek-dev --clone vicsek
+conda activate vicsek-dev
+```
+
+and installing whatever packages you would like to use for development, e.g.
+
+```
+conda install -c anaconda ipython
+conda install -c conda-forge jupyterlab black
+```
+
+### Testing
+
+If you're making changes it's a good idea run tests to make sure the changes didn't introduce unexpected behaviour. 
+
+```
+conda install -c anaconda pytest flake8
+```
+
+When executed in the base directory of the repository, the following lines will lint the code and run any existing unit tests.
+```
+flake8 .
+pytest
+```
+
+### Installation without Conda
+
+The requirements are basically just
+* Python 3.9
+* Reasonably up-to-date versions of NumPy, SciPy and Matplotlib
+* tqdm
+
+It should be fine to just install these via e.g. `pip install`, but I haven't tested it.
+
 ## Usage
 
-To do
+### In scripts
+
+The most basic usage is
+
+```python
+import matplotlib.pyplot as plt
+
+from vicsek.model import VicsekModel
+from vicsek.visualize import ParticlesAnimation
+
+model = VicsekModel(
+    length=10,
+    density=0.5,
+    speed=0.3,
+    radius=0.6,
+)
+
+# View a snapshot of the particles
+snapshot = model.view()
+plt.show()
+
+# Run an animation
+animator = ParticlesAnimation(model)
+animation = animator.animate()
+plt.show()
+```
+
+### Making an animation
+
+TODO
+
+### Evolution of the order parameter
+
+TODO
 
 ## To do
 
 Things I will definitely do:
 - [ ] Add example config files and outputs, e.g. to replicate original results of Ref.<sup>1</sup>
 - [ ] Add a couple of Jupyter notebooks to demonstrate usage
-- [ ] Add tests
+- [ ] Add more tests
 
 Things I would like to do:
 - [ ] Improve the speed
