@@ -5,7 +5,7 @@ with open("README.md") as f:
 
 setup(
     name="vicsek",
-    version=3.0,
+    version=0.3,
     description="Implementation of the Vicsek model of active matter",
     author="Joe Marsh Rossney",
     url="https://github.com/marshrossney/vicsek",
