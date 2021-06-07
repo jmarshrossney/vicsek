@@ -1,0 +1,13 @@
+# Args for the model
+length: 20
+density: 0.4
+speed: 0.03
+radius: 1
+noise: 1.0
+
+# Args for the animation
+frames: 150
+steps: 10
+
+# Seed for reproducibility
+seed: 12345

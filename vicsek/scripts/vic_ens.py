@@ -9,6 +9,13 @@ from vicsek.model import VicsekModel
 
 log = logging.getLogger(__name__)
 
+parser.add(
+    "--ensemble-size",
+    type=int,
+    default=10,
+    help="number of replica systems to simulate",
+)
+
 FNAME = "ensemble.png"
 
 

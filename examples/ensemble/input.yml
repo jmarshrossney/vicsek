@@ -1,0 +1,9 @@
+# Args for the model
+length: 20
+density: 0.5
+speed: 0.03
+radius: 1
+noise: 0.5
+
+# Number of replica models
+ensemble-size: 5
