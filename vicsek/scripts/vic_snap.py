@@ -6,6 +6,9 @@ from tqdm.autonotebook import tqdm
 from vicsek.config import parser
 from vicsek.model import VicsekModel
 
+parser.add("--frames", type=int, default=100, help="number of snapshots to save")
+parser.add("--steps", type=int, default=1, help="number of steps between snapshots")
+
 
 def main():
     args = parser.parse_args()

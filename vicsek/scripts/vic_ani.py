@@ -10,6 +10,10 @@ from vicsek.visualize import ParticlesAnimation
 
 log = logging.getLogger(__name__)
 
+parser.add("--frames", type=int, default=100, help="number of frames in the animation")
+parser.add("--steps", type=int, default=1, help="number of steps per frame")
+parser.add("--interval", type=int, default=30, help="number of ms between frames")
+
 plt.style.use(default_animation_style)
 
 FNAME = "animation.gif"
