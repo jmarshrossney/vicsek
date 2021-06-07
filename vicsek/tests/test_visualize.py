@@ -7,4 +7,3 @@ def test_animation_runs():
     animator = ParticlesAnimation(model)
 
     _ = animator.animate(frames=10)
-
